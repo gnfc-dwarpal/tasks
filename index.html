@@ -193,6 +193,12 @@
     color:var(--text-muted); font-size:12px; margin:-6px 0 10px;
   }
   .userbar .sync-state.error{color:var(--danger);}
+  .sync-error{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    background:var(--danger-weak); color:var(--danger); border:1px solid var(--danger);
+    border-radius:var(--radius); padding:10px 14px; margin:0 0 14px; font-size:13px; line-height:1.5;
+  }
+  .sync-error span{flex:1 1 260px;}
 
   @media (max-width: 480px){
     .row{flex-wrap:wrap;}
@@ -220,6 +226,10 @@
     <span id="userEmail"></span>
     <span class="sync-state" id="syncState"></span>
     <button id="signOutBtn" title="Sign out on this device">Sign out</button>
+  </div>
+  <div class="sync-error" id="syncError" role="alert" hidden>
+    <span id="syncErrorMsg"></span>
+    <button id="syncRetryBtn">Retry</button>
   </div>
   <p class="sub">Type a task and press Enter — numbering continues automatically. Click "+ Sub-Task" to add lettered points under any task, and Sub-Tasks can have their own Sub-Tasks too (unlimited levels).</p>
   <p class="legend">
@@ -822,6 +832,11 @@ let loaded = false;          // first snapshot for this user has been applied
 let pendingSnap = null;      // newest snapshot not applied yet (deferred while saving / typing)
 let synced = new Map();     // task id -> {json, order}, as last known to be in Firestore
 let inflight = Promise.resolve();
+let confirmedMap = new Map(); // last snapshot with no pending local writes: what the server really holds
+let writesInFlight = 0;       // commits sent but not yet acknowledged or rejected
+let epoch = 0;                // bumped on every sign-in/out so late callbacks can be ignored
+let publishSeq = 0, failedSeq = 0;
+let writeFailure = null;      // set while the server is rejecting our writes
 const MIGRATED_PREFIX = 'gnfc-tasks-migrated-';
 
 const byId = id => document.getElementById(id);
@@ -868,7 +883,11 @@ function doPublish(){
     if(!prev || prev.json !== json || prev.order !== i) changes.push({id: t.id, json, order: i});
   });
   const removed = [...synced.keys()].filter(id => !seen.has(id));
-  if(!changes.length && !removed.length){ tryApplyRemote(); return; }
+  if(!changes.length && !removed.length){
+    if(writeFailure) clearWriteFailure();   // nothing differs from the server any more
+    tryApplyRemote();
+    return;
+  }
 
   const col = tasksCol();
   const ops = changes.map(c => ({...c, del: false})).concat(removed.map(id => ({id, del: true})));
@@ -886,17 +905,45 @@ function doPublish(){
   // Our own writes come straight back as a snapshot that already includes
   // anything newer from other devices, so an older deferred snapshot is dropped.
   pendingSnap = null;
-  setSync('Saving…');
-  inflight = Promise.all(commits).then(() => {}, err => {
+  if(!writeFailure) setSync('Saving…');
+  const seq = ++publishSeq, myEpoch = epoch;
+  writesInFlight++;
+  inflight = Promise.all(commits).then(() => {
+    if(myEpoch === epoch && writeFailure && seq > failedSeq) clearWriteFailure();
+  }, err => {
     console.error(err);
-    setSync('Not saved: ' + (err.code || err.message), true);
-    showToast('Could not sync — ' + (err.code || err.message));
+    if(myEpoch !== epoch) return;
+    failedSeq = seq;
+    writeFailure = err;
+    // Firestore rolls a rejected write back out of its local view. Keep the user's
+    // work on screen, and forget that these changes were sent so the next save re-sends them.
+    synced = new Map(confirmedMap);
+    showWriteFailure(err);
+  }).then(() => {
+    if(myEpoch === epoch){ writesInFlight--; tryApplyRemote(); }
   });
 }
 
+function showWriteFailure(err){
+  const code = (err && (err.code || err.message)) || 'unknown error';
+  const denied = err && err.code === 'permission-denied';
+  byId('syncErrorMsg').textContent = 'Changes are NOT saved to your account (' + code + '). ' +
+    (denied ? 'Firestore refused the write: its security rules must let a signed-in user create, update and delete documents under users/{their uid}/tasks. ' : '') +
+    'Your changes are still on screen. Fix the cause, then press Retry.';
+  byId('syncError').hidden = false;
+  setSync('Not saved', true);
+}
+function clearWriteFailure(){
+  writeFailure = null;
+  byId('syncError').hidden = true;
+  setSync('Saving…');
+}
+byId('syncRetryBtn').addEventListener('click', () => { clearTimeout(saveTimer); doPublish(); });
+
 function onRemoteSnap(snap){
   const m = snap.metadata;
-  setSync(m.hasPendingWrites ? 'Saving…' : m.fromCache ? 'Offline — showing saved copy' : 'Synced');
+  if(!writeFailure) setSync(m.hasPendingWrites ? 'Saving…' : m.fromCache ? 'Offline — showing saved copy' : 'Synced');
+  if(!m.hasPendingWrites) confirmedMap = parseSnap(snap).map;
   pendingSnap = snap;
   tryApplyRemote();
 }
@@ -920,13 +967,7 @@ function markMigrated(){
   try{ localStorage.setItem(MIGRATED_PREFIX + currentUser.uid, '1'); }catch(e){}
 }
 
-function tryApplyRemote(){
-  const snap = pendingSnap;
-  if(!snap || saveTimer || isEditing()) return;
-  // An empty cached answer proves nothing about the account: wait for the server.
-  if(!loaded && snap.empty && snap.metadata.fromCache){ pendingSnap = null; return; }
-  pendingSnap = null;
-
+function parseSnap(snap){
   const incoming = [];
   const map = new Map();
   snap.docs.forEach(d => {
@@ -942,6 +983,23 @@ function tryApplyRemote(){
   incoming.sort((a, b) => (a.order - b.order) || (a.t.id < b.t.id ? -1 : 1));
   const tasks = incoming.map(x => x.t);
   normalize(tasks);
+  return {tasks, map};
+}
+
+function tryApplyRemote(){
+  const snap = pendingSnap;
+  // While our own writes are unanswered, a snapshot could be a rollback of them: wait for the verdict.
+  if(!snap || saveTimer || writesInFlight || isEditing()) return;
+  // An empty cached answer proves nothing about the account: wait for the server.
+  if(!loaded && snap.empty && snap.metadata.fromCache){ pendingSnap = null; return; }
+  pendingSnap = null;
+
+  const {tasks, map} = parseSnap(snap);
+  // The server is refusing our writes: never replace the user's unsaved work with its older copy.
+  if(loaded && writeFailure){
+    if(!snap.metadata.hasPendingWrites) synced = map;
+    return;
+  }
 
   if(!loaded){
     // First answer for this account. If the cloud list is empty, adopt the list
@@ -976,7 +1034,8 @@ onAuthStateChanged(auth, user => {
   if(unsubTasks){ unsubTasks(); unsubTasks = null; }
   clearTimeout(saveTimer); saveTimer = null;
   currentUser = user;
-  loaded = false; pendingSnap = null; synced = new Map();
+  loaded = false; pendingSnap = null; synced = new Map(); confirmedMap = new Map();
+  epoch++; writesInFlight = 0; writeFailure = null; byId('syncError').hidden = true;
   STATE = {tasks: []};
   historyStack = []; redoStack = [];
   updateUndoRedoButtons();
