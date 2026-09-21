@@ -302,12 +302,20 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
+// Force plain HTTP long-polling instead of Firestore's streaming WebChannel: some corporate
+// proxies/firewalls block the streaming Listen connection (CORS / "transport errored").
+// Every initializeFirestore call below must carry it, or that path would go back to streaming.
+const FS_TRANSPORT = {experimentalForceLongPolling: true};
 let db;
 try{
   // local cache lets the list open (and accept edits) while offline
-  db = initializeFirestore(fbApp, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})});
+  db = initializeFirestore(fbApp, {...FS_TRANSPORT, localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})});
 }catch(e){
-  db = getFirestore(fbApp);
+  try{
+    db = initializeFirestore(fbApp, FS_TRANSPORT);
+  }catch(e2){
+    db = getFirestore(fbApp);   // already initialised: reuse that instance
+  }
 }
 
 // Tasks saved in this browser by the old localStorage-only version. Never
