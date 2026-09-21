@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasks</title>
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --card:#ffffff;
+    --text:#1a1d23;
+    --text-muted:#6b7280;
+    --border:#e3e6ea;
+    --accent:#2563eb;
+    --accent-weak:#eaf1ff;
+    --done-bg:#f0fdf4;
+    --done-text:#16a34a;
+    --danger:#dc2626;
+    --danger-weak:#fef2f2;
+    --important:#dc2626;
+    --important-weak:#fff1f1;
+    --highlight-bg:#fff9db;
+    --highlight-bg-strong:#fef08a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 8px rgba(0,0,0,0.03);
+    --radius:10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15171b;
+      --card:#1e2126;
+      --text:#e8e9ec;
+      --text-muted:#9aa0a8;
+      --border:#2b2f36;
+      --accent:#5b9bff;
+      --accent-weak:#1c2a44;
+      --done-bg:#122318;
+      --done-text:#4ade80;
+      --danger:#f87171;
+      --danger-weak:#2a1414;
+      --important:#f87171;
+      --important-weak:#2a1616;
+      --highlight-bg:#3a3315;
+      --highlight-bg-strong:#524a1a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 8px rgba(0,0,0,0.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15171b;
+    --card:#1e2126;
+    --text:#e8e9ec;
+    --text-muted:#9aa0a8;
+    --border:#2b2f36;
+    --accent:#5b9bff;
+    --accent-weak:#1c2a44;
+    --done-bg:#122318;
+    --done-text:#4ade80;
+    --danger:#f87171;
+    --danger-weak:#2a1414;
+    --important:#f87171;
+    --important-weak:#2a1616;
+    --highlight-bg:#3a3315;
+    --highlight-bg-strong:#524a1a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 8px rgba(0,0,0,0.25);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    min-height:100vh; padding:20px 14px 60px;
+  }
+  .wrap{max-width:900px; margin:0 auto;}
+  h1{font-size:19px; margin:0 0 2px; letter-spacing:-0.01em;}
+  .sub{color:var(--text-muted); font-size:13px; margin:0 0 18px;}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;}
+  .toolbar .spacer{flex:1 1 auto;}
+  button, select{
+    font: inherit; cursor:pointer; border-radius:8px; border:1px solid var(--border);
+    background:var(--card); color:var(--text); padding:7px 12px; font-size:13px;
+    transition: background .12s ease;
+  }
+  button:hover{background:var(--accent-weak);}
+  button:disabled{opacity:0.4; cursor:default; background:var(--card);}
+  button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary:hover{filter:brightness(1.07);}
+  button.ghost{border-color:transparent; background:transparent; padding:4px 7px;}
+  button.danger-hover:hover{background:var(--danger-weak); color:var(--danger); border-color:var(--danger-weak);}
+  button.undo-btn{font-weight:600;}
+
+  .add-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:12px; margin-bottom:16px;
+    display:flex; gap:8px;
+  }
+  .add-card input[type=text]{
+    flex:1; border:1px solid var(--border); border-radius:8px; background:transparent;
+    color:var(--text); padding:9px 10px; font-size:14px; min-width:0;
+  }
+  .add-card input[type=text]:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+
+  ul.tasklist{list-style:none; margin:0; padding:0;}
+  li.task{
+    background:var(--card); border:1px solid var(--border); border-left:3px solid transparent; border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:8px; overflow:hidden;
+  }
+  li.task.important{ border-left-color:var(--important); }
+  .row{
+    display:flex; align-items:flex-start; gap:7px; padding:10px 10px;
+  }
+  .row.highlight{ background:var(--highlight-bg); }
+  .num{
+    font-weight:600; color:var(--accent); min-width:34px; text-align:right;
+    font-size:13.5px; padding-top:5px; user-select:none; flex-shrink:0;
+  }
+  li.task.important > .row > .num{ color:var(--important); }
+  .chk{
+    margin-top:8px; width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; cursor:pointer;
+  }
+  .txt{
+    flex:1; font-size:14.5px; line-height:1.45; word-break:break-word; padding-top:4px;
+    outline:none; border-radius:5px; padding:6px 4px; margin:-2px -4px;
+  }
+  .txt:focus{background:var(--accent-weak);}
+  .row.done .txt{color:var(--done-text); text-decoration:line-through; text-decoration-thickness:1.5px; opacity:0.75;}
+  .txt mark{ background:var(--highlight-bg-strong); color:inherit; border-radius:2px; padding:0 1px; }
+  .star{ color:var(--important); font-weight:700; margin-right:5px; user-select:none; }
+
+  .actions{display:flex; align-items:center; gap:1px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; padding-top:2px;}
+  .actions button{padding:4px 6px; font-size:12px; line-height:1;}
+  .actions button.active{background:var(--accent-weak); border-color:var(--accent);}
+  .actions button.active.imp-active{background:var(--important-weak); border-color:var(--important); color:var(--important);}
+  .actions button.active.hl-active{background:var(--highlight-bg-strong); border-color:var(--highlight-bg-strong); color:#5c4d00;}
+
+  .deadline-chip{
+    font-size:11px; border:1px solid var(--border); border-radius:6px; background:transparent;
+    color:var(--text-muted); padding:3px 6px; cursor:pointer; white-space:nowrap;
+  }
+  .deadline-chip.set{ color:var(--accent); border-color:var(--accent); }
+  .deadline-chip.overdue{ color:var(--danger); border-color:var(--danger); background:var(--danger-weak); font-weight:600; }
+  .deadline-input{
+    font: inherit; font-size:12px; border:1px solid var(--accent); border-radius:6px; background:var(--card);
+    color:var(--text); padding:3px 5px;
+  }
+
+  .subs{list-style:none; margin:0; padding:0 8px 8px 40px; border-top:1px dashed var(--border);}
+  .subs li{padding-top:8px;}
+  .subs > li{ border-radius:8px; }
+  .subs .num{min-width:26px; font-size:13px; color:var(--text-muted);}
+  .subs li.important > .row > .num{ color:var(--important); }
+  .subs li.important > .row{ border-left:2px solid var(--important); border-radius:8px; }
+
+  /* collapse / expand triangle — enlarged for easy clicking */
+  .toggle-btn{
+    flex-shrink:0; width:28px; height:28px; margin-top:0; padding:0;
+    border:none; background:var(--accent-weak); color:var(--accent); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;
+    border-radius:7px; transition: transform .15s ease, background .12s ease;
+  }
+  .toggle-btn:hover{background:var(--accent); color:#fff;}
+  .toggle-btn.collapsed{ transform: rotate(-90deg); }
+  .toggle-spacer{ width:28px; flex-shrink:0; }
+  .sub-count{
+    flex-shrink:0; font-size:11px; color:var(--text-muted); background:var(--accent-weak);
+    border-radius:10px; padding:3px 8px; margin-top:4px; white-space:nowrap;
+  }
+
+  .empty{text-align:center; color:var(--text-muted); padding:40px 0; font-size:14px;}
+  .footer-note{color:var(--text-muted); font-size:12px; text-align:center; margin-top:22px;}
+  .legend{color:var(--text-muted); font-size:11.5px; margin:2px 0 16px; line-height:1.6;}
+  .legend b{color:var(--text);}
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:var(--text); color:var(--bg); padding:8px 14px; border-radius:8px;
+    font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease;
+    box-shadow:var(--shadow); z-index:50; display:flex; align-items:center; gap:10px;
+  }
+  .toast.show{opacity:0.95; pointer-events:auto;}
+  .toast button{
+    background:transparent; border:1px solid var(--bg); color:var(--bg); padding:3px 9px;
+    font-size:12px; border-radius:6px;
+  }
+  .toast button:hover{background:rgba(255,255,255,0.15);}
+
+  /* sign-in card + signed-in user bar (Firebase) */
+  [hidden]{display:none !important;}
+  .auth-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:32px 24px; margin-top:24px; text-align:center;
+  }
+  .auth-card p{color:var(--text-muted); font-size:14px; margin:0 0 18px;}
+  .auth-msg{color:var(--danger); font-size:13px; margin:14px 0 0; line-height:1.5;}
+  .userbar{
+    display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap;
+    color:var(--text-muted); font-size:12px; margin:-6px 0 10px;
+  }
+  .userbar .sync-state.error{color:var(--danger);}
+
+  @media (max-width: 480px){
+    .row{flex-wrap:wrap;}
+    .actions{width:100%; justify-content:flex-start; padding-left:39px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Tasks</h1>
+
+  <div class="auth-card" id="loadingCard">
+    <p id="loadingMsg" style="margin:0;">Loading…</p>
+  </div>
+
+  <div class="auth-card" id="authCard" hidden>
+    <p>Sign in to see your tasks. They sync live across every device where you sign in with the same Google account.</p>
+    <button class="primary" id="signInBtn">Sign in with Google</button>
+    <p class="auth-msg" id="authMsg" hidden></p>
+  </div>
+
+  <div id="appBody" hidden>
+  <div class="userbar">
+    <span id="userEmail"></span>
+    <span class="sync-state" id="syncState"></span>
+    <button id="signOutBtn" title="Sign out on this device">Sign out</button>
+  </div>
+  <p class="sub">Type a task and press Enter — numbering continues automatically. Click "+ Sub-Task" to add lettered points under any task, and Sub-Tasks can have their own Sub-Tasks too (unlimited levels).</p>
+  <p class="legend">
+    <b>▸</b> click the triangle to collapse/expand Sub-Tasks &nbsp;·&nbsp; <b>★</b> mark Important &nbsp;·&nbsp; <b>H</b> highlight the row &nbsp;·&nbsp; <b>B</b> select text then click Bold (or Ctrl/Cmd+B) &nbsp;·&nbsp; <b>📅</b> set a deadline (turns red once overdue) &nbsp;·&nbsp; <b>↶ Undo</b> reverts the last change (also Ctrl/Cmd+Z outside a text box)
+  </p>
+
+  <div class="toolbar">
+    <button id="undoBtn" class="undo-btn" title="Undo last change (Ctrl/Cmd+Z)">↶ Undo</button>
+    <button id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>↷ Redo</button>
+    <select id="sortSelect" title="Sort tasks">
+      <option value="">Sort…</option>
+      <option value="done">Done last</option>
+      <option value="important">Important (★) first</option>
+      <option value="highlight">Highlighted first</option>
+      <option value="bold">Bold first</option>
+    </select>
+    <button id="collapseAll" title="Collapse all tasks with Sub-Tasks">Collapse all</button>
+    <button id="expandAll" title="Expand all tasks">Expand all</button>
+    <span class="spacer"></span>
+    <button id="copyPlain">Copy as plain list</button>
+    <button id="copyExcel">Copy for Excel / Word</button>
+    <button id="exportBackup" title="Download your task list as a JSON backup file">Export backup</button>
+    <button id="importBackupBtn" title="Restore from a JSON backup file" onclick="document.getElementById('importBackupInput').click()">Import backup</button>
+    <input type="file" id="importBackupInput" accept="application/json" style="display:none">
+    <button id="clearDone">Clear completed</button>
+  </div>
+
+  <div class="add-card">
+    <input type="text" id="newTaskInput" placeholder="Type new task and press Enter…" autocomplete="off">
+    <button class="primary" id="addTaskBtn">Add</button>
+  </div>
+
+  <ul class="tasklist" id="taskList"></ul>
+  <div class="empty" id="emptyMsg" style="display:none;">No tasks yet. Add one above.</div>
+
+  <p class="footer-note">Saved automatically to your Google account and synced live across your devices. "Export backup" downloads an offline copy.</p>
+  </div><!-- /#appBody -->
+</div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+// If the Firebase SDK (loaded by the module script below) never loads — offline,
+// blocked by an ad-blocker, etc. — replace "Loading…" with something actionable.
+setTimeout(function(){
+  if(window.__fbReady) return;
+  var m = document.getElementById('loadingMsg');
+  if(m) m.textContent = 'Could not load Firebase. Check your internet connection or ad-blocker, then reload.';
+}, 10000);
+</script>
+<script type="module">
+// Tasks are stored in Firestore under users/{uid}/tasks, one document per
+// top-level task ({json, order}); Sub-Tasks live inside that task's JSON, so
+// nesting depth is unlimited. Access is per Google account via Firebase Auth,
+// and the Firestore security rules must restrict users/{uid}/** to that uid.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+         collection, doc, onSnapshot, writeBatch }
+  from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+window.__fbReady = true;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCk2wVgY2Jl9_0CPzwYLqtPaeCOuzxh5wM",
+  authDomain: "tasks-app-c6202.firebaseapp.com",
+  projectId: "tasks-app-c6202",
+  storageBucket: "tasks-app-c6202.firebasestorage.app",
+  messagingSenderId: "935384391549",
+  appId: "1:935384391549:web:c58dbeec6ce3eb2af83614"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+let db;
+try{
+  // local cache lets the list open (and accept edits) while offline
+  db = initializeFirestore(fbApp, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})});
+}catch(e){
+  db = getFirestore(fbApp);
+}
+
+// Tasks saved in this browser by the old localStorage-only version. Never
+// deleted; only copied up once, into an account whose cloud list is empty.
+const LEGACY_KEY = 'gnfc-tasks-v1';
+let STATE = {tasks: []};
+let saveTimer = null;
+
+// ---- Undo / Redo ----
+let historyStack = [];
+let redoStack = [];
+const MAX_HISTORY = 50;
+
+function pushHistory(){
+  historyStack.push(JSON.stringify(STATE.tasks));
+  if(historyStack.length > MAX_HISTORY) historyStack.shift();
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+function undo(showMsg){
+  if(!historyStack.length) return;
+  redoStack.push(JSON.stringify(STATE.tasks));
+  const prev = historyStack.pop();
+  STATE.tasks = JSON.parse(prev);
+  save(); render();
+  updateUndoRedoButtons();
+  if(showMsg !== false) showToast('Undone');
+}
+function redo(){
+  if(!redoStack.length) return;
+  historyStack.push(JSON.stringify(STATE.tasks));
+  const next = redoStack.pop();
+  STATE.tasks = JSON.parse(next);
+  save(); render();
+  updateUndoRedoButtons();
+  showToast('Redone');
+}
+function updateUndoRedoButtons(){
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if(u) u.disabled = historyStack.length === 0;
+  if(r) r.disabled = redoStack.length === 0;
+}
+document.getElementById('undoBtn').addEventListener('click', () => undo());
+document.getElementById('redoBtn').addEventListener('click', () => redo());
+
+document.addEventListener('keydown', (e) => {
+  const active = document.activeElement;
+  const inTextField = active && (active.isContentEditable || active.tagName === 'INPUT');
+  if(inTextField) return; // let native editing undo work inside text fields
+  if((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')){
+    e.preventDefault(); undo();
+  } else if((e.ctrlKey || e.metaKey) && (e.shiftKey && (e.key === 'z' || e.key === 'Z') || e.key === 'y' || e.key === 'Y')){
+    e.preventDefault(); redo();
+  }
+});
+
+function uid(){ return 't' + Math.random().toString(36).slice(2,9); }
+function todayStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+function formatDeadline(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d + ' ' + months[parseInt(m,10)-1];
+}
+function newItem(text){
+  return {id: uid(), text: text || '', done:false, important:false, highlight:false, deadline:'', collapsed:false, subs:[]};
+}
+function normalize(items){
+  items.forEach(it => {
+    if(!it.id) it.id = uid();
+    if(typeof it.collapsed !== 'boolean') it.collapsed = false;
+    if(!Array.isArray(it.subs)) it.subs = [];
+    normalize(it.subs);
+  });
+}
+normalize(STATE.tasks);
+
+// base-26 letters (a..z, aa..az, ba.. etc) for the first Sub-Task level
+function toLetters(n){
+  let s = '';
+  n = n + 1;
+  while(n > 0){
+    n--;
+    s = String.fromCharCode(97 + (n % 26)) + s;
+    n = Math.floor(n / 26);
+  }
+  return s;
+}
+// numbering label for a path of 0-based indices, e.g. [9] -> "10.", [9,0] -> "10a.", [9,0,0] -> "10a.1.", [9,0,0,1] -> "10a.1.2."
+function computeLabel(path){
+  let s = String(path[0] + 1);
+  if(path.length > 1) s += toLetters(path[1]);
+  for(let d = 2; d < path.length; d++) s += '.' + (path[d] + 1);
+  return s + '.';
+}
+function hasBold(html){
+  return /<(b|strong)\b/i.test(html || '');
+}
+
+function render(){
+  const list = document.getElementById('taskList');
+  const emptyMsg = document.getElementById('emptyMsg');
+  list.innerHTML = '';
+  emptyMsg.style.display = STATE.tasks.length ? 'none' : 'block';
+  const today = todayStr();
+  renderList(STATE.tasks, [], list, today);
+}
+
+function renderList(items, path, container, today){
+  items.forEach((item, i) => {
+    const itemPath = path.concat([i]);
+    const li = document.createElement('li');
+    li.className = 'task' + (item.important ? ' important' : '');
+    const hasSubs = !!(item.subs && item.subs.length);
+
+    li.appendChild(buildRow(item, computeLabel(itemPath), {
+      path: itemPath,
+      hasSubs,
+      collapsed: !!item.collapsed,
+      onToggleCollapse: () => { item.collapsed = !item.collapsed; save(); render(); },
+      onEnter: () => {
+        const t = newItem('');
+        items.splice(i + 1, 0, t);
+        save(); render();
+        focusByPath(path.concat([i + 1]));
+      },
+      onDelete: () => {
+        pushHistory();
+        items.splice(i, 1);
+        save(); render();
+        showToast((path.length === 0 ? 'Task' : 'Sub-Task') + ' deleted', () => undo(false));
+      },
+      onAddSub: () => {
+        pushHistory();
+        item.subs = item.subs || [];
+        item.collapsed = false;
+        item.subs.push(newItem(''));
+        save(); render();
+        focusByPath(itemPath.concat([item.subs.length - 1]));
+      },
+      today
+    }));
+
+    if(hasSubs && !item.collapsed){
+      const subsUl = document.createElement('ul');
+      subsUl.className = 'subs';
+      renderList(item.subs, itemPath, subsUl, today);
+      li.appendChild(subsUl);
+    }
+
+    container.appendChild(li);
+  });
+}
+
+function buildRow(item, numLabel, opts){
+  const row = document.createElement('div');
+  row.className = 'row' + (item.done ? ' done' : '') + (item.highlight ? ' highlight' : '');
+
+  if(opts.hasSubs){
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'toggle-btn' + (opts.collapsed ? ' collapsed' : '');
+    toggleBtn.title = opts.collapsed ? 'Expand Sub-Tasks' : 'Collapse Sub-Tasks';
+    toggleBtn.textContent = '▾';
+    toggleBtn.addEventListener('mousedown', e => e.preventDefault());
+    toggleBtn.addEventListener('click', opts.onToggleCollapse);
+    row.appendChild(toggleBtn);
+  } else {
+    const spacer = document.createElement('span');
+    spacer.className = 'toggle-spacer';
+    row.appendChild(spacer);
+  }
+
+  const numEl = document.createElement('div');
+  numEl.className = 'num';
+  numEl.textContent = numLabel;
+
+  const chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.className = 'chk';
+  chk.checked = !!item.done;
+  chk.title = 'Mark done';
+  chk.addEventListener('change', () => {
+    pushHistory();
+    item.done = chk.checked;
+    save(); render();
+  });
+
+  const txt = document.createElement('div');
+  txt.className = 'txt';
+  txt.contentEditable = 'true';
+  txt.dataset.path = opts.path.join('-');
+  if(item.important){
+    const star = document.createElement('span');
+    star.className = 'star';
+    star.textContent = '★';
+    txt.appendChild(star);
+  }
+  txt.appendChild(document.createTextNode(''));
+  // set html body (preserve bold formatting) after star
+  const bodySpan = document.createElement('span');
+  bodySpan.innerHTML = item.text;
+  txt.appendChild(bodySpan);
+
+  let editSnapshotTaken = false;
+  txt.addEventListener('focus', () => { editSnapshotTaken = false; });
+  txt.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const pasteText = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, pasteText);
+  });
+  function snapshotBeforeTextEdit(){
+    if(!editSnapshotTaken){
+      pushHistory();
+      editSnapshotTaken = true;
+    }
+  }
+  txt.addEventListener('blur', () => {
+    const newVal = extractBody(txt);
+    if(newVal !== item.text){
+      snapshotBeforeTextEdit();
+      item.text = newVal;
+      save();
+    }
+  });
+  txt.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      const newVal = extractBody(txt);
+      if(newVal !== item.text){ snapshotBeforeTextEdit(); item.text = newVal; }
+      opts.onEnter();
+      return;
+    }
+    if((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')){
+      e.preventDefault();
+      snapshotBeforeTextEdit();
+      document.execCommand('bold');
+    }
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  const impBtn = document.createElement('button');
+  impBtn.className = 'ghost' + (item.important ? ' active imp-active' : '');
+  impBtn.title = 'Mark Important';
+  impBtn.textContent = '★';
+  impBtn.addEventListener('mousedown', e => e.preventDefault());
+  impBtn.addEventListener('click', () => {
+    pushHistory();
+    item.important = !item.important;
+    save(); render();
+  });
+
+  const hlBtn = document.createElement('button');
+  hlBtn.className = 'ghost' + (item.highlight ? ' active hl-active' : '');
+  hlBtn.title = 'Highlight row';
+  hlBtn.textContent = 'H';
+  hlBtn.addEventListener('mousedown', e => e.preventDefault());
+  hlBtn.addEventListener('click', () => {
+    pushHistory();
+    item.highlight = !item.highlight;
+    save(); render();
+  });
+
+  // Bold: preserve the text selection across the mousedown->click sequence,
+  // since clicking a toolbar button can otherwise collapse the selection
+  // before execCommand('bold') runs (which made it look like it just
+  // "entered edit mode" instead of applying Bold).
+  let savedRange = null;
+  const boldBtn = document.createElement('button');
+  boldBtn.className = 'ghost';
+  boldBtn.title = 'Bold selected text (select text first)';
+  boldBtn.innerHTML = '<b>B</b>';
+  boldBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const sel = window.getSelection();
+    if(sel && sel.rangeCount && !sel.isCollapsed && txt.contains(sel.anchorNode)){
+      savedRange = sel.getRangeAt(0).cloneRange();
+    } else {
+      savedRange = null;
+    }
+  });
+  boldBtn.addEventListener('click', () => {
+    txt.focus();
+    if(savedRange){
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+      pushHistory();
+      document.execCommand('bold');
+      item.text = extractBody(txt);
+      save();
+    } else {
+      showToast('Select some text first, then click Bold');
+    }
+  });
+
+  actions.appendChild(impBtn);
+  actions.appendChild(hlBtn);
+  actions.appendChild(boldBtn);
+
+  // deadline chip
+  const isOverdue = item.deadline && item.deadline < opts.today && !item.done;
+  const chip = document.createElement('button');
+  chip.className = 'deadline-chip' + (item.deadline ? ' set' : '') + (isOverdue ? ' overdue' : '');
+  chip.textContent = item.deadline ? ('📅 ' + formatDeadline(item.deadline) + (isOverdue ? ' overdue' : '')) : '📅 date';
+  chip.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'deadline-input';
+    input.value = item.deadline || '';
+    chip.replaceWith(input);
+    input.focus();
+    if(input.showPicker){ try{ input.showPicker(); }catch(e){} }
+    let committed = false;
+    const commit = () => {
+      if(committed) return; // avoid a duplicate change+blur firing render() twice
+      committed = true;
+      if((input.value || '') !== (item.deadline || '')){
+        pushHistory();
+        item.deadline = input.value || '';
+        save();
+      }
+      render();
+    };
+    input.addEventListener('change', commit);
+    input.addEventListener('blur', commit);
+  });
+  actions.appendChild(chip);
+
+  const subBtn = document.createElement('button');
+  subBtn.className = 'ghost';
+  subBtn.title = 'Add a Sub-Task under this item';
+  subBtn.textContent = '+ Sub-Task';
+  subBtn.addEventListener('click', opts.onAddSub);
+  actions.appendChild(subBtn);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'ghost danger-hover';
+  delBtn.textContent = '✕';
+  delBtn.title = 'Delete';
+  delBtn.addEventListener('click', opts.onDelete);
+  actions.appendChild(delBtn);
+
+  row.appendChild(numEl);
+  row.appendChild(chk);
+  row.appendChild(txt);
+  if(opts.hasSubs && opts.collapsed){
+    const countBadge = document.createElement('span');
+    countBadge.className = 'sub-count';
+    countBadge.textContent = item.subs.length + (item.subs.length === 1 ? ' sub-task hidden' : ' sub-tasks hidden');
+    row.appendChild(countBadge);
+  }
+  row.appendChild(actions);
+  return row;
+}
+
+function extractBody(txtEl){
+  // txtEl children: [optional star span, empty text node, body span]
+  const bodySpan = txtEl.querySelector('span:last-child');
+  if(bodySpan) return bodySpan.innerHTML.trim();
+  return txtEl.innerHTML.trim();
+}
+
+function addMainTask(text){
+  pushHistory();
+  const t = newItem(text);
+  STATE.tasks.push(t);
+  return t;
+}
+
+function focusByPath(path){
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.txt[data-path="' + path.join('-') + '"]');
+    if(el) el.focus();
+  });
+}
+
+document.getElementById('addTaskBtn').addEventListener('click', () => {
+  const input = document.getElementById('newTaskInput');
+  const v = input.value.trim();
+  if(!v) return;
+  addMainTask(v);
+  input.value = '';
+  save(); render();
+});
+document.getElementById('newTaskInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    document.getElementById('addTaskBtn').click();
+  }
+});
+
+document.getElementById('clearDone').addEventListener('click', () => {
+  pushHistory();
+  function prune(items){
+    items.forEach(t => { if(t.subs) prune(t.subs); });
+    return items.filter(t => !t.done);
+  }
+  function pruneInPlace(items){
+    for(let i = items.length - 1; i >= 0; i--){
+      if(items[i].subs) pruneInPlace(items[i].subs);
+      if(items[i].done) items.splice(i, 1);
+    }
+  }
+  pruneInPlace(STATE.tasks);
+  save(); render();
+  showToast('Completed tasks cleared', () => undo(false));
+});
+
+document.getElementById('collapseAll').addEventListener('click', () => {
+  function walk(items){ items.forEach(t => { if(t.subs && t.subs.length){ t.collapsed = true; walk(t.subs); } }); }
+  walk(STATE.tasks);
+  save(); render();
+});
+document.getElementById('expandAll').addEventListener('click', () => {
+  function walk(items){ items.forEach(t => { t.collapsed = false; if(t.subs) walk(t.subs); }); }
+  walk(STATE.tasks);
+  save(); render();
+});
+
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  const v = e.target.value;
+  e.target.value = '';
+  if(!v) return;
+  sortTasks(v);
+});
+function sortTasks(criterion){
+  const keyFns = {
+    done: t => t.done ? 1 : 0,
+    important: t => t.important ? 0 : 1,
+    highlight: t => t.highlight ? 0 : 1,
+    bold: t => hasBold(t.text) ? 0 : 1
+  };
+  const keyFn = keyFns[criterion];
+  if(!keyFn) return;
+  pushHistory();
+  STATE.tasks = STATE.tasks
+    .map((t, i) => ({t, i}))
+    .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
+    .map(x => x.t);
+  save(); render();
+  const labels = {done:'Done last', important:'Important first', highlight:'Highlighted first', bold:'Bold first'};
+  showToast('Sorted: ' + labels[criterion]);
+}
+
+function htmlToPlain(html){
+  let s = html || '';
+  s = s.replace(/<(b|strong)>(.*?)<\/(b|strong)>/gi, '**$2**');
+  const div = document.createElement('div');
+  div.innerHTML = s;
+  return div.textContent.trim();
+}
+
+function buildPlainText(){
+  let lines = [];
+  function walk(items, path, indentLevel){
+    items.forEach((t, i) => {
+      const p = path.concat([i]);
+      const flags = (t.important ? ' [Important]' : '') + (t.deadline ? (' [Due ' + formatDeadline(t.deadline) + ']') : '');
+      lines.push('    '.repeat(indentLevel) + computeLabel(p) + ' ' + htmlToPlain(t.text) + flags + (t.done ? '  [Done]' : ''));
+      if(t.subs && t.subs.length) walk(t.subs, p, indentLevel + 1);
+    });
+  }
+  walk(STATE.tasks, [], 0);
+  return lines.join('\n');
+}
+function buildTabText(){
+  let lines = ['Sl. No.\tTask\tImportant\tDeadline\tStatus'];
+  function walk(items, path, indentLevel){
+    items.forEach((t, i) => {
+      const p = path.concat([i]);
+      lines.push(computeLabel(p) + '\t' + '    '.repeat(indentLevel) + htmlToPlain(t.text) + '\t' + (t.important ? 'Yes' : '') + '\t' + (t.deadline || '') + '\t' + (t.done ? 'Done' : 'Pending'));
+      if(t.subs && t.subs.length) walk(t.subs, p, indentLevel + 1);
+    });
+  }
+  walk(STATE.tasks, [], 0);
+  return lines.join('\n');
+}
+
+function showToast(msg, undoAction){
+  const el = document.getElementById('toast');
+  const msgEl = document.getElementById('toastMsg');
+  msgEl.textContent = msg;
+  // remove any previous inline undo button
+  const existingBtn = el.querySelector('button');
+  if(existingBtn) existingBtn.remove();
+  if(undoAction){
+    const btn = document.createElement('button');
+    btn.textContent = 'Undo';
+    btn.addEventListener('click', () => { undoAction(); hideToast(); });
+    el.appendChild(btn);
+  }
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(hideToast, undoAction ? 4000 : 1600);
+}
+function hideToast(){
+  document.getElementById('toast').classList.remove('show');
+}
+
+async function copyToClipboard(text, label){
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast(label + ' copied');
+  }catch(e){
+    showToast('Copy failed — select and copy manually');
+  }
+}
+document.getElementById('copyPlain').addEventListener('click', () => copyToClipboard(buildPlainText(), 'List'));
+document.getElementById('copyExcel').addEventListener('click', () => copyToClipboard(buildTabText(), 'Table'));
+
+// ---- Firestore sync ----
+let currentUser = null;
+let unsubTasks = null;
+let loaded = false;          // first snapshot for this user has been applied
+let pendingSnap = null;      // newest snapshot not applied yet (deferred while saving / typing)
+let synced = new Map();     // task id -> {json, order}, as last known to be in Firestore
+let inflight = Promise.resolve();
+const MIGRATED_PREFIX = 'gnfc-tasks-migrated-';
+
+const byId = id => document.getElementById(id);
+function setView(name){
+  byId('loadingCard').hidden = name !== 'loading';
+  byId('authCard').hidden = name !== 'signedOut';
+  byId('appBody').hidden = name !== 'app';
+}
+function setSync(text, isError){
+  const el = byId('syncState');
+  el.textContent = text;
+  el.classList.toggle('error', !!isError);
+}
+function tasksCol(){ return collection(db, 'users', currentUser.uid, 'tasks'); }
+
+// True while the user is typing in a task or picking a date; a re-render then
+// would destroy the field they are working in.
+function isEditing(){
+  const a = document.activeElement;
+  if(!a || !byId('taskList').contains(a)) return false;
+  return a.isContentEditable || (a.tagName === 'INPUT' && a.type === 'date');
+}
+
+function save(){
+  if(!loaded) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doPublish, 500);
+}
+function flushSave(){
+  if(saveTimer){ clearTimeout(saveTimer); doPublish(); }
+}
+
+// Diff STATE against what Firestore is known to hold and write only the changes.
+function doPublish(){
+  saveTimer = null;
+  if(!currentUser || !loaded) return;
+  const seen = new Set();
+  const changes = [];
+  STATE.tasks.forEach((t, i) => {
+    if(!t.id || seen.has(t.id)) t.id = uid();
+    seen.add(t.id);
+    const json = JSON.stringify(t);
+    const prev = synced.get(t.id);
+    if(!prev || prev.json !== json || prev.order !== i) changes.push({id: t.id, json, order: i});
+  });
+  const removed = [...synced.keys()].filter(id => !seen.has(id));
+  if(!changes.length && !removed.length){ tryApplyRemote(); return; }
+
+  const col = tasksCol();
+  const ops = changes.map(c => ({...c, del: false})).concat(removed.map(id => ({id, del: true})));
+  const commits = [];
+  for(let n = 0; n < ops.length; n += 400){          // Firestore batches hold at most 500 writes
+    const batch = writeBatch(db);
+    ops.slice(n, n + 400).forEach(o => {
+      if(o.del) batch.delete(doc(col, o.id));
+      else batch.set(doc(col, o.id), {json: o.json, order: o.order});
+    });
+    commits.push(batch.commit());
+  }
+  changes.forEach(c => synced.set(c.id, {json: c.json, order: c.order}));
+  removed.forEach(id => synced.delete(id));
+  // Our own writes come straight back as a snapshot that already includes
+  // anything newer from other devices, so an older deferred snapshot is dropped.
+  pendingSnap = null;
+  setSync('Saving…');
+  inflight = Promise.all(commits).then(() => {}, err => {
+    console.error(err);
+    setSync('Not saved: ' + (err.code || err.message), true);
+    showToast('Could not sync — ' + (err.code || err.message));
+  });
+}
+
+function onRemoteSnap(snap){
+  const m = snap.metadata;
+  setSync(m.hasPendingWrites ? 'Saving…' : m.fromCache ? 'Offline — showing saved copy' : 'Synced');
+  pendingSnap = snap;
+  tryApplyRemote();
+}
+function onRemoteError(err){
+  console.error(err);
+  const msg = err && err.code === 'permission-denied'
+    ? 'Firestore refused access. The security rules must allow signed-in users to read and write users/{their uid}/tasks.'
+    : 'Could not reach Firestore: ' + ((err && (err.code || err.message)) || 'unknown error');
+  if(loaded) setSync(msg, true); else byId('loadingMsg').textContent = msg;
+}
+
+function legacyTasks(){
+  try{
+    if(localStorage.getItem(MIGRATED_PREFIX + currentUser.uid)) return null;
+    const data = JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null');
+    if(data && Array.isArray(data.tasks) && data.tasks.length){ normalize(data.tasks); return data.tasks; }
+  }catch(e){}
+  return null;
+}
+function markMigrated(){
+  try{ localStorage.setItem(MIGRATED_PREFIX + currentUser.uid, '1'); }catch(e){}
+}
+
+function tryApplyRemote(){
+  const snap = pendingSnap;
+  if(!snap || saveTimer || isEditing()) return;
+  // An empty cached answer proves nothing about the account: wait for the server.
+  if(!loaded && snap.empty && snap.metadata.fromCache){ pendingSnap = null; return; }
+  pendingSnap = null;
+
+  const incoming = [];
+  const map = new Map();
+  snap.docs.forEach(d => {
+    const data = d.data();
+    if(!data || typeof data.json !== 'string') return;
+    try{
+      const t = JSON.parse(data.json);
+      t.id = d.id;
+      incoming.push({t, order: typeof data.order === 'number' ? data.order : 0});
+      map.set(d.id, {json: data.json, order: data.order});
+    }catch(e){ console.warn('Skipping unreadable task document', d.id); }
+  });
+  incoming.sort((a, b) => (a.order - b.order) || (a.t.id < b.t.id ? -1 : 1));
+  const tasks = incoming.map(x => x.t);
+  normalize(tasks);
+
+  if(!loaded){
+    // First answer for this account. If the cloud list is empty, adopt the list
+    // from this browser's old localStorage-only version (once per account).
+    const legacy = (snap.empty && !snap.metadata.fromCache) ? legacyTasks() : null;
+    markMigrated();
+    loaded = true;
+    synced = map;
+    STATE.tasks = legacy || tasks;
+    setView('app');
+    render();
+    if(legacy){
+      doPublish();
+      showToast('Copied ' + legacy.length + ' task' + (legacy.length === 1 ? '' : 's') + ' from this browser to your account');
+    }
+    return;
+  }
+
+  synced = map;
+  // Keep the current objects when nothing changed: on-screen rows hold references to them.
+  if(JSON.stringify(STATE.tasks) !== JSON.stringify(tasks)){
+    STATE.tasks = tasks;
+    render();
+  }
+}
+// a deferred remote update is applied as soon as the user leaves the field
+byId('taskList').addEventListener('focusout', () => setTimeout(tryApplyRemote, 0));
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') flushSave(); });
+window.addEventListener('pagehide', flushSave);
+
+onAuthStateChanged(auth, user => {
+  if(unsubTasks){ unsubTasks(); unsubTasks = null; }
+  clearTimeout(saveTimer); saveTimer = null;
+  currentUser = user;
+  loaded = false; pendingSnap = null; synced = new Map();
+  STATE = {tasks: []};
+  historyStack = []; redoStack = [];
+  updateUndoRedoButtons();
+  render();
+  byId('signInBtn').disabled = false;
+  if(!user){ setView('signedOut'); return; }
+  byId('userEmail').textContent = user.email || user.displayName || '';
+  setSync('');
+  byId('loadingMsg').textContent = 'Loading your tasks…';
+  setView('loading');
+  unsubTasks = onSnapshot(tasksCol(), onRemoteSnap, onRemoteError);
+});
+
+byId('signInBtn').addEventListener('click', async () => {
+  const btn = byId('signInBtn'), msg = byId('authMsg');
+  const provider = new GoogleAuthProvider();
+  msg.hidden = true;
+  btn.disabled = true;
+  try{
+    await signInWithPopup(auth, provider);
+  }catch(e){
+    btn.disabled = false;
+    const code = e && e.code;
+    if(code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+    if(code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment'){
+      try{ await signInWithRedirect(auth, provider); return; }catch(e2){ /* fall through to the message */ }
+    }
+    msg.textContent = code === 'auth/unauthorized-domain'
+      ? 'This site’s address is not in Firebase → Authentication → Settings → Authorized domains.'
+      : 'Sign-in failed: ' + (code || (e && e.message) || 'unknown error');
+    msg.hidden = false;
+  }
+});
+byId('signOutBtn').addEventListener('click', async () => {
+  flushSave();
+  // give in-flight writes a moment to reach Firestore before the session ends
+  await Promise.race([inflight, new Promise(r => setTimeout(r, 4000))]);
+  try{ await signOut(auth); }catch(e){ showToast('Sign out failed'); }
+});
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tasks-backup-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.tasks)) throw new Error('bad format');
+      pushHistory();
+      STATE = {tasks: data.tasks};
+      normalize(STATE.tasks);
+      save(); render();
+      showToast('Backup imported');
+    }catch(e){
+      showToast('Import failed — not a valid backup file');
+    }
+  };
+  reader.readAsText(file);
+}
+document.getElementById('exportBackup').addEventListener('click', exportBackup);
+document.getElementById('importBackupInput').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if(file) importBackup(file);
+  e.target.value = '';
+});
+
+updateUndoRedoButtons();
+render();
+</script>
+</body>
+</html>
