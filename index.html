@@ -776,10 +776,15 @@ function sortTasks(criterion){
   const keyFn = keyFns[criterion];
   if(!keyFn) return;
   pushHistory();
-  STATE.tasks = STATE.tasks
-    .map((t, i) => ({t, i}))
-    .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
-    .map(x => x.t);
+  function sortLevel(list){
+    const sorted = list
+      .map((t, i) => ({t, i}))
+      .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
+      .map(x => x.t);
+    sorted.forEach(t => { if(t.subs && t.subs.length) t.subs = sortLevel(t.subs); });
+    return sorted;
+  }
+  STATE.tasks = sortLevel(STATE.tasks);
   save(); render();
   const labels = {done:'Done last', doneFirst:'Done first', important:'Important first', highlight:'Highlighted first', bold:'Bold first', dateAsc:'Earliest date first', dateDesc:'Latest date first'};
   showToast('Sorted: ' + labels[criterion]);
