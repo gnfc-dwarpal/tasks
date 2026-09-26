@@ -778,10 +778,14 @@ function sortTasks(criterion){
   pushHistory();
   // A task ranks by the best (lowest) key found anywhere in its own subtree,
   // so a matching Sub-Task — however deeply nested — pulls its whole chain
-  // of ancestors up with it, not just its immediate siblings.
+  // of ancestors up with it, not just its immediate siblings. When the win
+  // came from a descendant rather than the task itself, auto-expand it so
+  // the match that earned its new position is actually visible.
   function bestKey(t){
-    let best = keyFn(t);
+    const ownKey = keyFn(t);
+    let best = ownKey;
     if(t.subs) t.subs.forEach(c => { best = Math.min(best, bestKey(c)); });
+    if(best < ownKey) t.collapsed = false;
     return best;
   }
   function sortLevel(list){
