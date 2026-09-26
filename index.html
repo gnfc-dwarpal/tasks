@@ -152,7 +152,7 @@
   /* collapse / expand triangle — plain glyph, no button box, so every row's
      number lines up in the same column whether or not it has Sub-Tasks */
   .toggle-btn{
-    flex-shrink:0; width:20px; height:28px; margin-top:0; margin-right:-19px; padding:0;
+    flex-shrink:0; width:20px; height:28px; margin-top:0; margin-right:-20px; padding:0;
     border:none; background:transparent; color:var(--accent); cursor:pointer;
     display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1;
     transition: transform .15s ease, opacity .12s ease;
@@ -161,7 +161,7 @@
   .toggle-btn.collapsed{ transform: rotate(-90deg); }
   /* same width+margin as .toggle-btn (kept in sync) so both reserve the same
      tiny outer space and numbers stay aligned, whichever row type this is */
-  .toggle-spacer{ width:20px; margin-right:-19px; flex-shrink:0; }
+  .toggle-spacer{ width:20px; margin-right:-20px; flex-shrink:0; }
   .sub-count{
     flex-shrink:0; font-size:11px; color:var(--text-muted); background:var(--accent-weak);
     border-radius:10px; padding:3px 8px; margin-top:4px; white-space:nowrap;
