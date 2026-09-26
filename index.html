@@ -253,6 +253,8 @@
       <option value="important">Important (★) first</option>
       <option value="highlight">Highlighted first</option>
       <option value="bold">Bold first</option>
+      <option value="dateAsc">Earliest date first</option>
+      <option value="dateDesc">Latest date first</option>
     </select>
     <button id="collapseAll" title="Collapse all tasks with Sub-Tasks">Collapse all</button>
     <button id="expandAll" title="Expand all tasks">Expand all</button>
@@ -767,7 +769,9 @@ function sortTasks(criterion){
     doneFirst: t => t.done ? 0 : 1,
     important: t => t.important ? 0 : 1,
     highlight: t => t.highlight ? 0 : 1,
-    bold: t => hasBold(t.text) ? 0 : 1
+    bold: t => hasBold(t.text) ? 0 : 1,
+    dateAsc: t => t.deadline ? Date.parse(t.deadline) : Infinity,
+    dateDesc: t => t.deadline ? -Date.parse(t.deadline) : Infinity
   };
   const keyFn = keyFns[criterion];
   if(!keyFn) return;
@@ -777,7 +781,7 @@ function sortTasks(criterion){
     .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
     .map(x => x.t);
   save(); render();
-  const labels = {done:'Done last', doneFirst:'Done first', important:'Important first', highlight:'Highlighted first', bold:'Bold first'};
+  const labels = {done:'Done last', doneFirst:'Done first', important:'Important first', highlight:'Highlighted first', bold:'Bold first', dateAsc:'Earliest date first', dateDesc:'Latest date first'};
   showToast('Sorted: ' + labels[criterion]);
 }
 
