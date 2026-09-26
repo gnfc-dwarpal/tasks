@@ -776,13 +776,20 @@ function sortTasks(criterion){
   const keyFn = keyFns[criterion];
   if(!keyFn) return;
   pushHistory();
+  // A task ranks by the best (lowest) key found anywhere in its own subtree,
+  // so a matching Sub-Task — however deeply nested — pulls its whole chain
+  // of ancestors up with it, not just its immediate siblings.
+  function bestKey(t){
+    let best = keyFn(t);
+    if(t.subs) t.subs.forEach(c => { best = Math.min(best, bestKey(c)); });
+    return best;
+  }
   function sortLevel(list){
-    const sorted = list
-      .map((t, i) => ({t, i}))
-      .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
+    list.forEach(t => { if(t.subs && t.subs.length) t.subs = sortLevel(t.subs); });
+    return list
+      .map((t, i) => ({t, i, key: bestKey(t)}))
+      .sort((a, b) => (a.key - b.key) || (a.i - b.i))
       .map(x => x.t);
-    sorted.forEach(t => { if(t.subs && t.subs.length) t.subs = sortLevel(t.subs); });
-    return sorted;
   }
   STATE.tasks = sortLevel(STATE.tasks);
   save(); render();
