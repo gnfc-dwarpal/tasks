@@ -122,7 +122,8 @@
   .txt:focus{background:var(--accent-weak);}
   .row.done .txt{color:var(--done-text); text-decoration:line-through; text-decoration-thickness:1.5px; opacity:0.75;}
   .txt mark{ background:var(--highlight-bg-strong); color:inherit; border-radius:2px; padding:0 1px; }
-  .star{ color:var(--important); font-weight:700; margin-right:5px; user-select:none; }
+  .star{ color:var(--important); font-weight:700; user-select:none; padding-top:5px; flex-shrink:0; }
+  .txt{ min-height:1.45em; } /* keep an empty box its full height so it stays tappable */
 
   .actions{display:flex; align-items:center; gap:1px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; padding-top:2px;}
   .actions button{padding:4px 6px; font-size:12px; line-height:1;}
@@ -421,6 +422,7 @@ function hasBold(html){
 }
 
 function render(){
+  commitActiveEdit();
   const list = document.getElementById('taskList');
   const emptyMsg = document.getElementById('emptyMsg');
   list.innerHTML = '';
@@ -512,17 +514,16 @@ function buildRow(item, numLabel, opts){
   txt.className = 'txt';
   txt.contentEditable = 'true';
   txt.dataset.path = opts.path.join('-');
+  // The box holds ONLY the task text. (It used to wrap the text in an inner <span>
+  // and save just that span; in a new, empty Sub-Task the browser typed beside the
+  // empty span, so the text was never saved and vanished on the next refresh.)
+  txt.innerHTML = item.text;
+  let star = null;
   if(item.important){
-    const star = document.createElement('span');
+    star = document.createElement('span');
     star.className = 'star';
     star.textContent = '★';
-    txt.appendChild(star);
   }
-  txt.appendChild(document.createTextNode(''));
-  // set html body (preserve bold formatting) after star
-  const bodySpan = document.createElement('span');
-  bodySpan.innerHTML = item.text;
-  txt.appendChild(bodySpan);
 
   let editSnapshotTaken = false;
   txt.addEventListener('focus', () => { editSnapshotTaken = false; });
@@ -537,14 +538,16 @@ function buildRow(item, numLabel, opts){
       editSnapshotTaken = true;
     }
   }
-  txt.addEventListener('blur', () => {
+  function commitText(){
     const newVal = extractBody(txt);
     if(newVal !== item.text){
       snapshotBeforeTextEdit();
       item.text = newVal;
       save();
     }
-  });
+  }
+  txt._commit = commitText;   // render() calls this so typed text survives a re-render (★, H, ▾ clicks)
+  txt.addEventListener('blur', commitText);
   txt.addEventListener('keydown', (e) => {
     if(e.key === 'Enter'){
       e.preventDefault();
@@ -667,6 +670,7 @@ function buildRow(item, numLabel, opts){
 
   row.appendChild(numEl);
   row.appendChild(chk);
+  if(star) row.appendChild(star);
   row.appendChild(txt);
   if(opts.hasSubs && opts.collapsed){
     const countBadge = document.createElement('span');
@@ -679,11 +683,17 @@ function buildRow(item, numLabel, opts){
 }
 
 function extractBody(txtEl){
-  // txtEl children: [optional star span, empty text node, body span]
-  const bodySpan = txtEl.querySelector('span:last-child');
-  if(bodySpan) return bodySpan.innerHTML.trim();
-  return txtEl.innerHTML.trim();
+  // everything typed in the box counts; a box holding only a stray <br> (browsers
+  // leave one after you delete all text) is empty
+  if(!txtEl.textContent.trim()) return '';
+  return txtEl.innerHTML.replace(/(<br\s*\/?>\s*)+$/i, '').trim();
 }
+// Save whatever is being typed right now into its task before the list is rebuilt.
+function commitActiveEdit(){
+  const a = document.activeElement;
+  if(a && typeof a._commit === 'function' && byIdList().contains(a)) a._commit();
+}
+function byIdList(){ return document.getElementById('taskList'); }
 
 function addMainTask(text){
   pushHistory();
