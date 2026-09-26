@@ -243,6 +243,7 @@
     <select id="sortSelect" title="Sort tasks">
       <option value="">Sort…</option>
       <option value="done">Done last</option>
+      <option value="doneFirst">Done first</option>
       <option value="important">Important (★) first</option>
       <option value="highlight">Highlighted first</option>
       <option value="bold">Bold first</option>
@@ -761,6 +762,7 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
 function sortTasks(criterion){
   const keyFns = {
     done: t => t.done ? 1 : 0,
+    doneFirst: t => t.done ? 0 : 1,
     important: t => t.important ? 0 : 1,
     highlight: t => t.highlight ? 0 : 1,
     bold: t => hasBold(t.text) ? 0 : 1
@@ -773,7 +775,7 @@ function sortTasks(criterion){
     .sort((a, b) => (keyFn(a.t) - keyFn(b.t)) || (a.i - b.i))
     .map(x => x.t);
   save(); render();
-  const labels = {done:'Done last', important:'Important first', highlight:'Highlighted first', bold:'Bold first'};
+  const labels = {done:'Done last', doneFirst:'Done first', important:'Important first', highlight:'Highlighted first', bold:'Bold first'};
   showToast('Sorted: ' + labels[criterion]);
 }
 
