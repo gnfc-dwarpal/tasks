@@ -149,15 +149,17 @@
   .subs li.important > .row > .num{ color:var(--important); }
   .subs li.important > .row{ border-left:2px solid var(--important); border-radius:8px; }
 
-  /* collapse / expand triangle — enlarged for easy clicking */
+  /* collapse / expand triangle — plain glyph, no button box, so every row's
+     number lines up in the same column whether or not it has Sub-Tasks */
   .toggle-btn{
-    flex-shrink:0; width:28px; height:28px; margin-top:0; margin-right:-11px; padding:0;
-    border:none; background:var(--accent-weak); color:var(--accent); cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;
-    border-radius:7px; transition: transform .15s ease, background .12s ease;
+    flex-shrink:0; width:20px; height:28px; margin-top:0; padding:0;
+    border:none; background:transparent; color:var(--accent); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1;
+    transition: transform .15s ease, opacity .12s ease;
   }
-  .toggle-btn:hover{background:var(--accent); color:#fff;}
+  .toggle-btn:hover{ opacity:0.65; }
   .toggle-btn.collapsed{ transform: rotate(-90deg); }
+  .toggle-spacer{ width:20px; flex-shrink:0; } /* same width as .toggle-btn, invisible, keeps numbers aligned */
   .sub-count{
     flex-shrink:0; font-size:11px; color:var(--text-muted); background:var(--accent-weak);
     border-radius:10px; padding:3px 8px; margin-top:4px; white-space:nowrap;
@@ -489,6 +491,10 @@ function buildRow(item, numLabel, opts){
     toggleBtn.addEventListener('mousedown', e => e.preventDefault());
     toggleBtn.addEventListener('click', opts.onToggleCollapse);
     row.appendChild(toggleBtn);
+  } else {
+    const spacer = document.createElement('span');
+    spacer.className = 'toggle-spacer';
+    row.appendChild(spacer);
   }
 
   const numEl = document.createElement('div');
