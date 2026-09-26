@@ -158,7 +158,6 @@
   }
   .toggle-btn:hover{background:var(--accent); color:#fff;}
   .toggle-btn.collapsed{ transform: rotate(-90deg); }
-  .toggle-spacer{ width:28px; flex-shrink:0; }
   .sub-count{
     flex-shrink:0; font-size:11px; color:var(--text-muted); background:var(--accent-weak);
     border-radius:10px; padding:3px 8px; margin-top:4px; white-space:nowrap;
@@ -490,10 +489,6 @@ function buildRow(item, numLabel, opts){
     toggleBtn.addEventListener('mousedown', e => e.preventDefault());
     toggleBtn.addEventListener('click', opts.onToggleCollapse);
     row.appendChild(toggleBtn);
-  } else {
-    const spacer = document.createElement('span');
-    spacer.className = 'toggle-spacer';
-    row.appendChild(spacer);
   }
 
   const numEl = document.createElement('div');
